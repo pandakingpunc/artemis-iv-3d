@@ -14,24 +14,48 @@ import { createOcean } from './src/ocean.js';
 import { createPost } from './src/post.js';
 import { createLooks } from './src/looks.js';
 import { createUI } from './src/ui.js';
+import { t as msg, L, getLang, onLang } from './src/i18n.js';
 import { createAudio } from './src/audio.js';
 import { DURATION as duration, STAGE_STARTS, EVENTS as EV, PROPS, FLAG_POS, SPSS_POS, DUSTER_POS, LADDER, LANDER_YAW, astronautAt } from './src/timeline.js';
 
 const { orion, lander, astronaut, flag, duster, spss, entryCapsule, seaCapsule, recoveryShip } = SC;
 const DEG = Math.PI / 180, V3 = THREE.Vector3;
 const stageDefs = [
-  { day: 0, to: 12 / 1440, title: 'Yerçekimine<br>veda.', name: 'Fırlatma', tag: 'KENNEDY / DÜNYA', desc: 'Dört astronot. Bir yolculuk. SLS, Orion’u Dünya’dan Ay’a taşıyacak görevini T+0’da başlatıyor.', crew: '4 ASTRONOT · ORION', loc: 'Kennedy Uzay Merkezi' },
-  { day: 12 / 1440, to: .5, title: 'Mavi gezegenin<br>ötesinde.', name: 'Dünya yörüngesi', short: 'Yörünge', tag: 'DÜNYA / ORION', desc: 'Yükselişin ardından kademe ayrılmaları ve araç kontrolleri. Orion, Ay’a transfer için hazırlanıyor.', crew: '4 ASTRONOT · ORION', loc: 'Dünya çevresi' },
-  { day: .5, to: 5, title: 'İki dünya<br>arasında.', name: 'Ay’a transfer', short: 'Transfer', tag: 'DÜNYA → AY', desc: 'Yaşam destek, haberleşme ve navigasyon kontrolleri sürüyor. Önümüzde Ay ve yeni bir yüzey yolculuğu var.', crew: '4 ASTRONOT · ORION', loc: 'Ay transferi' },
-  { day: 5, to: 6, title: 'Yörüngede<br>buluşma.', name: 'Kenetlenme', tag: 'AY / BULUŞMA', desc: 'Orion, ticari iniş aracıyla kenetleniyor. İki astronot yüzeye gidecek, iki astronot yörüngede kalacak.', crew: '2 YÜZEY + 2 YÖRÜNGE', loc: 'Ay çevresi' },
-  { day: 6, to: 6.25, title: 'Yeni bir<br>ayak izi.', name: 'Ay’a iniş', short: 'İniş', tag: 'AY / GÜNEY KUTUP BÖLGESİ', desc: 'İniş aracı kontrollü biçimde alçalıyor. Alçak Güneş ışığı, krater duvarlarında uzun gölgeler bırakıyor.', crew: '2 ASTRONOT · HLS', loc: 'Güney kutup bölgesi' },
-  { day: 6.25, to: 11.9, title: 'Sessizliğin<br>içindeki bilim.', name: 'Yüzey bilimi', short: 'Yüzey', tag: 'AY / YÜZEY OPERASYONLARI', desc: 'Jeolojik gözlemler, kaya ve toprak örnekleri. Aday DUSTER ve SPSS bilim yükleri Ay ortamını araştırmak için geliştiriliyor.', crew: '2 YÜZEY + 2 YÖRÜNGE', loc: 'Ay yüzeyi' },
-  { day: 11.9, to: 13, title: 'Yeniden<br>bir arada.', name: 'Kalkış / buluşma', short: 'Kalkış', tag: 'AY → ORION', desc: 'Yüzey ekibi örnekleriyle yörüngeye dönüyor. Dört astronot Orion’da yeniden birleşiyor.', crew: '4 ASTRONOT · YENİDEN BİRLEŞME', loc: 'Ay yüzeyi → yörünge' },
-  { day: 13, to: 18, title: 'Eve giden<br>uzun yol.', name: 'Dünya’ya dönüş', short: 'Dönüş', tag: 'AY → DÜNYA', desc: 'Orion Ay çevresinden ayrılıyor. Dönüş uçuşunda rota kontrolleri ve atmosfer girişine hazırlık yapılıyor.', crew: '4 ASTRONOT · ORION', loc: 'Dünya transferi' },
-  { day: 18, to: 20, title: 'Son ateş<br>çemberi.', name: 'Atmosfer girişi', short: 'Giriş', tag: 'DÜNYA / ORION KAPSÜLÜ', desc: 'Servis modülünden ayrılan Orion, ısı kalkanıyla atmosfer girişini karşılıyor. Paraşütler denize inişi yavaşlatacak.', crew: '4 ASTRONOT · KAPSÜL', loc: 'Dünya atmosferi' },
-  { day: 20, to: 20.05, title: 'Bir yolculuk.<br>Yeni bir başlangıç.', name: 'Pasifik / kurtarma', short: 'Pasifik', tag: 'PASİFİK / GÖREV SONU', desc: 'Kapsül Pasifik’e iniyor, kurtarma ekibi astronotları alıyor. Örnekler ve uçuş verileri, sonraki Ay görevlerine ışık tutacak.', crew: '4 ASTRONOT · DÜNYA’YA DÖNÜŞ', loc: 'Pasifik Okyanusu' }
+  { day: 0, to: 12 / 1440,
+    en: { title: 'Farewell to<br>gravity.', name: 'Launch', tag: 'KENNEDY / EARTH', desc: 'Four astronauts. One journey. At T+0, SLS begins its mission to carry Orion from Earth to the Moon.', crew: '4 ASTRONAUTS · ORION', loc: 'Kennedy Space Center' },
+    tr: { title: 'Yerçekimine<br>veda.', name: 'Fırlatma', tag: 'KENNEDY / DÜNYA', desc: 'Dört astronot. Bir yolculuk. SLS, Orion’u Dünya’dan Ay’a taşıyacak görevini T+0’da başlatıyor.', crew: '4 ASTRONOT · ORION', loc: 'Kennedy Uzay Merkezi' } },
+  { day: 12 / 1440, to: .5,
+    en: { title: 'Beyond the<br>blue planet.', name: 'Earth orbit', short: 'Orbit', tag: 'EARTH / ORION', desc: 'After ascent: stage separations and vehicle checkouts. Orion prepares for the transfer to the Moon.', crew: '4 ASTRONAUTS · ORION', loc: 'Earth orbit' },
+    tr: { title: 'Mavi gezegenin<br>ötesinde.', name: 'Dünya yörüngesi', short: 'Yörünge', tag: 'DÜNYA / ORION', desc: 'Yükselişin ardından kademe ayrılmaları ve araç kontrolleri. Orion, Ay’a transfer için hazırlanıyor.', crew: '4 ASTRONOT · ORION', loc: 'Dünya çevresi' } },
+  { day: .5, to: 5,
+    en: { title: 'Between two<br>worlds.', name: 'Lunar transfer', short: 'Transfer', tag: 'EARTH → MOON', desc: 'Life support, communications and navigation checks continue. Ahead lie the Moon and a new surface journey.', crew: '4 ASTRONAUTS · ORION', loc: 'Translunar coast' },
+    tr: { title: 'İki dünya<br>arasında.', name: 'Ay’a transfer', short: 'Transfer', tag: 'DÜNYA → AY', desc: 'Yaşam destek, haberleşme ve navigasyon kontrolleri sürüyor. Önümüzde Ay ve yeni bir yüzey yolculuğu var.', crew: '4 ASTRONOT · ORION', loc: 'Ay transferi' } },
+  { day: 5, to: 6,
+    en: { title: 'Rendezvous<br>in orbit.', name: 'Docking', tag: 'MOON / RENDEZVOUS', desc: 'Orion docks with the commercial lander. Two astronauts will head to the surface; two will stay in orbit.', crew: '2 SURFACE + 2 ORBIT', loc: 'Lunar orbit' },
+    tr: { title: 'Yörüngede<br>buluşma.', name: 'Kenetlenme', tag: 'AY / BULUŞMA', desc: 'Orion, ticari iniş aracıyla kenetleniyor. İki astronot yüzeye gidecek, iki astronot yörüngede kalacak.', crew: '2 YÜZEY + 2 YÖRÜNGE', loc: 'Ay çevresi' } },
+  { day: 6, to: 6.25,
+    en: { title: 'A new<br>footprint.', name: 'Lunar landing', short: 'Landing', tag: 'MOON / SOUTH POLAR REGION', desc: 'The lander descends under control. Low sunlight casts long shadows across the crater walls.', crew: '2 ASTRONAUTS · HLS', loc: 'South polar region' },
+    tr: { title: 'Yeni bir<br>ayak izi.', name: 'Ay’a iniş', short: 'İniş', tag: 'AY / GÜNEY KUTUP BÖLGESİ', desc: 'İniş aracı kontrollü biçimde alçalıyor. Alçak Güneş ışığı, krater duvarlarında uzun gölgeler bırakıyor.', crew: '2 ASTRONOT · HLS', loc: 'Güney kutup bölgesi' } },
+  { day: 6.25, to: 11.9,
+    en: { title: 'Science in<br>the silence.', name: 'Surface science', short: 'Surface', tag: 'MOON / SURFACE OPERATIONS', desc: 'Geological observations, rock and soil samples. The candidate DUSTER and SPSS science payloads are being developed to study the lunar environment.', crew: '2 SURFACE + 2 ORBIT', loc: 'Lunar surface' },
+    tr: { title: 'Sessizliğin<br>içindeki bilim.', name: 'Yüzey bilimi', short: 'Yüzey', tag: 'AY / YÜZEY OPERASYONLARI', desc: 'Jeolojik gözlemler, kaya ve toprak örnekleri. Aday DUSTER ve SPSS bilim yükleri Ay ortamını araştırmak için geliştiriliyor.', crew: '2 YÜZEY + 2 YÖRÜNGE', loc: 'Ay yüzeyi' } },
+  { day: 11.9, to: 13,
+    en: { title: 'Together<br>again.', name: 'Ascent / rendezvous', short: 'Ascent', tag: 'MOON → ORION', desc: 'The surface crew returns to orbit with their samples. All four astronauts reunite aboard Orion.', crew: '4 ASTRONAUTS · REUNITED', loc: 'Lunar surface → orbit' },
+    tr: { title: 'Yeniden<br>bir arada.', name: 'Kalkış / buluşma', short: 'Kalkış', tag: 'AY → ORION', desc: 'Yüzey ekibi örnekleriyle yörüngeye dönüyor. Dört astronot Orion’da yeniden birleşiyor.', crew: '4 ASTRONOT · YENİDEN BİRLEŞME', loc: 'Ay yüzeyi → yörünge' } },
+  { day: 13, to: 18,
+    en: { title: 'The long road<br>home.', name: 'Return to Earth', short: 'Return', tag: 'MOON → EARTH', desc: 'Orion leaves lunar orbit. On the way home the crew makes course corrections and prepares for atmospheric entry.', crew: '4 ASTRONAUTS · ORION', loc: 'Earth transfer' },
+    tr: { title: 'Eve giden<br>uzun yol.', name: 'Dünya’ya dönüş', short: 'Dönüş', tag: 'AY → DÜNYA', desc: 'Orion Ay çevresinden ayrılıyor. Dönüş uçuşunda rota kontrolleri ve atmosfer girişine hazırlık yapılıyor.', crew: '4 ASTRONOT · ORION', loc: 'Dünya transferi' } },
+  { day: 18, to: 20,
+    en: { title: 'The last ring<br>of fire.', name: 'Atmospheric entry', short: 'Entry', tag: 'EARTH / ORION CAPSULE', desc: 'Separated from its service module, Orion meets atmospheric entry behind its heat shield. Parachutes will slow the descent to the sea.', crew: '4 ASTRONAUTS · CAPSULE', loc: 'Earth’s atmosphere' },
+    tr: { title: 'Son ateş<br>çemberi.', name: 'Atmosfer girişi', short: 'Giriş', tag: 'DÜNYA / ORION KAPSÜLÜ', desc: 'Servis modülünden ayrılan Orion, ısı kalkanıyla atmosfer girişini karşılıyor. Paraşütler denize inişi yavaşlatacak.', crew: '4 ASTRONOT · KAPSÜL', loc: 'Dünya atmosferi' } },
+  { day: 20, to: 20.05,
+    en: { title: 'One journey.<br>A new beginning.', name: 'Pacific / recovery', short: 'Pacific', tag: 'PACIFIC / MISSION END', desc: 'The capsule splashes down in the Pacific and the recovery team picks up the astronauts. Samples and flight data will light the way for future lunar missions.', crew: '4 ASTRONAUTS · BACK ON EARTH', loc: 'Pacific Ocean' },
+    tr: { title: 'Bir yolculuk.<br>Yeni bir başlangıç.', name: 'Pasifik / kurtarma', short: 'Pasifik', tag: 'PASİFİK / GÖREV SONU', desc: 'Kapsül Pasifik’e iniyor, kurtarma ekibi astronotları alıyor. Örnekler ve uçuş verileri, sonraki Ay görevlerine ışık tutacak.', crew: '4 ASTRONOT · DÜNYA’YA DÖNÜŞ', loc: 'Pasifik Okyanusu' } }
 ];
-const stages = stageDefs.map((s, i) => ({ start: STAGE_STARTS[i], end: STAGE_STARTS[i + 1] ?? duration, ...s }));
+const stages = stageDefs.map((s, i) => ({ start: STAGE_STARTS[i], end: STAGE_STARTS[i + 1] ?? duration, day: s.day, to: s.to, i18n: { en: s.en, tr: s.tr } }));
+// the active language's fields (title, name, short, tag, desc, crew, loc) are copied onto each stage; registered before the UI's own listener
+const localizeStages = () => { const l = getLang(); for (const s of stages) { delete s.short; Object.assign(s, s.i18n[l]); } };
+localizeStages(); onLang(localizeStages);
 const WORLD_OF_STAGE = ['launch', 'orbit', 'transfer', 'dock', 'surface', 'surface', 'surface', 'return', 'entry', 'splash'];
 const state = { time: 0, playing: false, speed: 1, mode: 'cinematic', quality: 'medium', labels: true, sound: false, view: 0 };
 
@@ -68,7 +92,7 @@ const KV = new Array(8).fill(0);
 // ------------------------------------------------------------------------------------------------ renderer, scene, lights
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas: $('#scene'), antialias: false, powerPreference: 'high-performance' }); }
-catch (e) { $('#loading').innerHTML = '<h2>WebGL açılamadı</h2><p>Donanım hızlandırması açık bir tarayıcıda BASLAT.cmd ile yeniden aç.</p>'; throw e; }
+catch (e) { $('#loading').innerHTML = '<h2>' + msg('webglFail') + '</h2><p>' + msg('webglFailMsg') + '</p>'; throw e; }
 renderer.setClearColor(0x03070d); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;   // never toggled: every quality tier shares the same programs
 const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(43, innerWidth / innerHeight, .1, 6000);
@@ -101,7 +125,7 @@ const ui = uiRef = createUI({
   cycleView() { state.view = (state.view + 1) % 3; if (state.mode === 'free') { state.mode = 'cinematic'; orbit.enabled = false; } update(state.time); return state.view; },
   capture() { update(state.time); post.setFade(0); post.render(state.time, 0); return renderer.domElement.toDataURL('image/png'); }
 });
-progress(.01, 'Başlatılıyor');
+progress(.01, msg('loadInit'));
 await nextFrame();
 
 const worlds = {}; const world = key => { const g = group(scene); worlds[key] = g; return g; };
@@ -110,7 +134,7 @@ const post = createPost(renderer, scene, camera);
 post.warm?.();
 const looks = createLooks({ renderer, scene, ambient, sun, fill: fillLight, stars, post, setShadowExtent });
 const white = mat(0xd8d9d8, .35, .38);
-progress(.04, 'Işık ve görüntü zinciri'); await nextFrame();
+progress(.04, msg('lLight')); await nextFrame();
 
 // 1 · Launch: coastal complex at dawn, SLS with deterministic exhaust and smoke.
 const launch = world('launch'); launch.add(createSky()); createLaunchSite(launch);
@@ -121,21 +145,21 @@ const engineLight = new THREE.PointLight(0xffa260, 0, 220, 2); SLS.coreEngineAnc
 const ascentPath = (u, out) => out.set(u * u * 12, Math.pow(u, 1.7) * 210, 0);
 const plume = createLaunchPlume(launch, ascentPath);
 const sepPuffs = createSeparationPuffs(launch, { origin: ascentPath(EV.srbSep / 20, new THREE.Vector3()), t0: EV.srbSep, boosters, core: sls });
-progress(.08, 'Fırlatma kompleksi'); await nextFrame();
+progress(.08, msg('lPad')); await nextFrame();
 
 // 2 · Earth orbit: spent stage drifts away while Orion configures for the transfer burn.
 const earthWorld = world('orbit'), earthOrb = earth(earthWorld, 120); earthOrb.rotation.set(.25, 1.1, -.2);
 const orbitShip = orion(earthWorld, 2.1), detachedStage = mesh(cylinderG, white, earthWorld, 0, 0, 0, 4, 32, 4), orbFlame = flame(orbitShip.userData.engineAnchor, { scale: .4, kind: 'oms' });
 const rcsOrbit = createRcsPuffs(orbitShip, { radius: 1.9, y: -.3, size: .9 });
 orbitShip.rotation.order = 'ZXY';
-progress(.12, 'Dünya'); await nextFrame();
+progress(.12, msg('lEarth')); await nextFrame();
 
 // 3 · Translunar coast.
 const transfer = world('transfer'), earthTrans = earth(transfer, 105); earthTrans.rotation.y = 1;
 const moonTrans = moon(transfer, 45);
 const transferShip = orion(transfer, 2.4); transferShip.rotation.order = 'ZXY';
 const rcsTransfer = createRcsPuffs(transferShip, { radius: 1.9, y: -.3, size: .8, prob: .35 });
-progress(.16, 'Ay ve transfer'); await nextFrame();
+progress(.16, msg('lMoon')); await nextFrame();
 
 // 4 · Lunar-orbit rendezvous. Moon rotated so the texture's pole pinch faces away from the docking camera. Orion:lander scale 1.4:1 as in the ascent.
 const rendezvous = world('dock'), moonDock = moon(rendezvous, 150); moonDock.rotation.set(1.25, .4, 0);
@@ -154,11 +178,11 @@ const spriteMat = c => new THREE.SpriteMaterial({ map: soft, color: new THREE.Co
 const latchGlow = new THREE.Sprite(spriteMat([5, 3.6, 2])); latchGlow.renderOrder = 7; latch.add(latchGlow);
 const dockLamps = [0, 1, 2].map(i => { const s = new THREE.Sprite(spriteMat(i === 1 ? [.5, 5, 1.2] : [6, .8, .5])); s.scale.setScalar(.42); s.renderOrder = 7; const a = i * Math.PI * 2 / 3 + .6; s.position.set(0, Math.cos(a) * 1.25, Math.sin(a) * 1.25); latch.add(s); return s; });
 const dockTag = new THREE.Object3D(); dockTag.position.set(HATCH_X + .5, DOCK_Y + 3.2, 0); rendezvous.add(dockTag);
-progress(.2, 'Kenetlenme'); await nextFrame();
+progress(.2, msg('lDock')); await nextFrame();
 
 // 5–7 · South-polar surface: landing, science and ascent share one set.
 const surface = world('surface'); createLunarSurface(surface, renderer);
-progress(.24, 'Ay yüzeyi'); await nextFrame();
+progress(.24, msg('lSurface')); await nextFrame();
 const surfaceLander = lander(surface), landFlame = flame(surfaceLander.userData.engineAnchor, { scale: .72, kind: 'descent' });
 const groundLight = new THREE.PointLight(0xffc091, 0, 80); surfaceLander.add(groundLight);
 const surfaceEarth = earth(surface, 19); surfaceEarth.rotation.set(.4, -1.5, -.3);
@@ -172,7 +196,7 @@ const rcsAscent = createRcsPuffs(surfaceLander, { radius: 3.1, y: 7.5, size: 1.4
 const ascentDock = orion(surface, 1.4); ascentDock.rotation.order = 'ZXY';
 const rcsAscentOrion = createRcsPuffs(ascentDock, { radius: 1.9, y: -.3 });
 surfaceLander.userData.setLegs?.(0);
-progress(.3, 'Yüzey nesneleri'); await nextFrame();
+progress(.3, msg('lProps')); await nextFrame();
 
 // 8 · Trans-Earth coast.
 const returnWorld = world('return'), returnEarth = earth(returnWorld, 100); returnEarth.rotation.y = 1.8;
@@ -180,7 +204,7 @@ const returnMoon = moon(returnWorld, 40);
 const returnShip = orion(returnWorld, 2.5); returnShip.rotation.order = 'ZXY';
 const returnFlame = flame(returnShip.userData.engineAnchor, { scale: .4, kind: 'oms' });
 const rcsReturn = createRcsPuffs(returnShip, { radius: 1.9, y: -.3, size: .8, prob: .4 });
-progress(.34, 'Dönüş'); await nextFrame();
+progress(.34, msg('lReturn')); await nextFrame();
 
 // 9 · Entry: the Orion stack (crew module + service module) flips after separation, heat shield first.
 const entry = world('entry'), entryEarth = earth(entry, 160);
@@ -215,7 +239,7 @@ const capsulePos = (t, out) => { const u = ramp(t, 156, 171); return out.set(mix
 // cloud-immersion veil used for the entry -> splash bridge (a pale cloud-white haze that wraps the camera)
 const veil = new THREE.Mesh(new THREE.SphereGeometry(30, 16, 10), new THREE.MeshBasicMaterial({ color: 0xaec4e0, transparent: true, depthTest: false, depthWrite: false, side: THREE.BackSide, opacity: 0, fog: false, toneMapped: false }));
 veil.renderOrder = 998; veil.frustumCulled = false; veil.visible = false; scene.add(veil);
-progress(.38, 'Atmosfer girişi'); await nextFrame();
+progress(.38, msg('lEntry')); await nextFrame();
 
 // 10 · Pacific splashdown and recovery.
 const splash = world('splash'), ocean = createOcean(splash); splash.add(createSky());
@@ -252,32 +276,32 @@ function makeWake() {
 const wakes = boats.map(b => { const w = makeWake(); b.add(w); return w; });
 // the boats' own bow-spray / stern-wake sheets are scaled with speed so parked boats do not trail streaks (uAmt is read per frame by the foam shaders)
 const boatFoam = boats.map(b => { const a = []; b.traverse(o => { if (o.isMesh && /^foam(Bow|Wake)$/.test(o.name) && o.material.uniforms?.uAmt) a.push([o.material.uniforms.uAmt, o.material.uniforms.uAmt.value]); }); return a; });
-progress(.42, 'Pasifik'); await nextFrame();
+progress(.42, msg('lPacific')); await nextFrame();
 
 // ------------------------------------------------------------------------------------------------ annotations
 const noObj = (parent, x, y, z) => { const o = new THREE.Object3D(); o.position.set(x, y, z); parent.add(o); return o; };
 const dusterLabelObj = noObj(surface, 0, 2.5, 0), spssLabelObj = noObj(surface, 0, 2.5, 0);
 const esmTag = noObj(orbitShip, 0, -1.5, 0), shipTag = noObj(rescue, 0, 62, 0);   // anchors on the ESM (orbit) and above the recovery ship's superstructure
 const ANN = {
-  dockOrion: { text: 'ORION · 2 ASTRONOT YÖRÜNGEDE', world: 'dock', object: dockShip, offset: new V3(-5, 8, 0), side: 'left' },
-  dockHls: { text: 'HLS · TEMSİLİ İNİŞ ARACI', world: 'dock', object: dockLander, offset: new V3(-3, 7.5, 0), side: 'right' },
-  dockLatched: { text: 'KENETLENDİ · ORION + HLS', world: 'dock', object: dockTag, side: 'right' },
-  entrySm: { text: 'ORION · HİZMET MODÜLÜ (ESM)', world: 'entry', object: sm3, offset: new V3(0, 7, 0) },
-  ship: { text: 'KURTARMA GEMİSİ', world: 'splash', object: shipTag, radius: 22 },
-  duster: { text: 'DUSTER · ADAY YÜK', world: 'surface', object: dusterLabelObj, scienceOnly: true, occlude: true },
-  spss: { text: 'SPSS · ADAY YÜK', world: 'surface', object: spssLabelObj, scienceOnly: true, occlude: true }
+  dockOrion: { text: L('ORION · 2 ASTRONAUTS IN ORBIT', 'ORION · 2 ASTRONOT YÖRÜNGEDE'), world: 'dock', object: dockShip, offset: new V3(-5, 8, 0), side: 'left' },
+  dockHls: { text: L('HLS · REPRESENTATIVE LANDER', 'HLS · TEMSİLİ İNİŞ ARACI'), world: 'dock', object: dockLander, offset: new V3(-3, 7.5, 0), side: 'right' },
+  dockLatched: { text: L('DOCKED · ORION + HLS', 'KENETLENDİ · ORION + HLS'), world: 'dock', object: dockTag, side: 'right' },
+  entrySm: { text: L('ORION · SERVICE MODULE (ESM)', 'ORION · HİZMET MODÜLÜ (ESM)'), world: 'entry', object: sm3, offset: new V3(0, 7, 0) },
+  ship: { text: L('RECOVERY SHIP', 'KURTARMA GEMİSİ'), world: 'splash', object: shipTag, radius: 22 },
+  duster: { text: L('DUSTER · CANDIDATE PAYLOAD', 'DUSTER · ADAY YÜK'), world: 'surface', object: dusterLabelObj, scienceOnly: true, occlude: true },
+  spss: { text: L('SPSS · CANDIDATE PAYLOAD', 'SPSS · ADAY YÜK'), world: 'surface', object: spssLabelObj, scienceOnly: true, occlude: true }
 };
 ui.addAnnotations([
   { text: 'SLS · ORION', world: 'launch', object: sls, offset: new V3(3, 54, 0) },
-  { text: 'ORION · HİZMET MODÜLÜ (ESM)', world: 'orbit', object: esmTag, offset: new V3(5, 6, 0), radius: 5 },
-  { text: 'ORION · 4 ASTRONOT', world: 'transfer', object: transferShip, offset: new V3(3, -8, 0) },
+  { text: L('ORION · SERVICE MODULE (ESM)', 'ORION · HİZMET MODÜLÜ (ESM)'), world: 'orbit', object: esmTag, offset: new V3(5, 6, 0), radius: 5 },
+  { text: L('ORION · 4 ASTRONAUTS', 'ORION · 4 ASTRONOT'), world: 'transfer', object: transferShip, offset: new V3(3, -8, 0) },
   ANN.dockOrion, ANN.dockHls, ANN.dockLatched,
-  { text: 'HLS · TEMSİLİ MODEL', world: 'surface', object: surfaceLander, offset: new V3(3, 8, 0), lander: true },
+  { text: L('HLS · REPRESENTATIVE MODEL', 'HLS · TEMSİLİ MODEL'), world: 'surface', object: surfaceLander, offset: new V3(3, 8, 0), lander: true },
   ANN.duster, ANN.spss,
-  { text: 'ORION · DÜNYA’YA DÖNÜŞ', world: 'return', object: returnShip, offset: new V3(7, 9, 0) },
+  { text: L('ORION · RETURN TO EARTH', 'ORION · DÜNYA’YA DÖNÜŞ'), world: 'return', object: returnShip, offset: new V3(7, 9, 0) },
   ANN.entrySm,
-  { text: 'ORION KAPSÜLÜ', world: 'entry', object: capsule, offset: new V3(0, 6, 0) },
-  { text: 'ORION KAPSÜLÜ', world: 'splash', object: seaCap, offset: new V3(0, 5, 0) },
+  { text: L('ORION CAPSULE', 'ORION KAPSÜLÜ'), world: 'entry', object: capsule, offset: new V3(0, 6, 0) },
+  { text: L('ORION CAPSULE', 'ORION KAPSÜLÜ'), world: 'splash', object: seaCap, offset: new V3(0, 5, 0) },
   ANN.ship
 ]);
 
@@ -773,7 +797,7 @@ async function compileWorld(key) {
 async function setQualityUser(q) {
   userTier = q; state.quality = q; adapt = 1; effTier = q; lowSeconds = 0;
   if (warmedTiers.has(q) || !worlds[activeWorld]) { applyQuality(); return; }
-  compiling = true; ui.toast('Kalite ayarı uygulanıyor…'); applyQuality();
+  compiling = true; ui.toast(msg('qApplying')); applyQuality();
   try { await compileWorld(activeWorld); } catch {}
   compiling = false; warmedTiers.add(q); update(state.time); post.render(state.time, 0);
   for (const key of Object.keys(worlds)) { if (key === activeWorld) continue; await nextFrame(); try { await compileWorld(key); } catch {} }
@@ -811,8 +835,8 @@ function adaptive(now) {
   if (slow && slowStreak < 2) { drawN = 0; return; }
   if (slow) {
     calmSince = 0; slowStreak = 0;
-    if (effTier !== 'low') { effTier = TIERS[TIERS.indexOf(effTier) - 1]; ui.toast('Akıcılık için kalite düşürüldü: ' + ({ low: 'düşük', medium: 'orta' })[effTier]); applyQuality(); }
-    else if (adapt > .7) { adapt = Math.max(.7, adapt * .85); applyQuality(); ui.toast('Akıcılık için görüntü çözünürlüğü uyarlandı.'); }
+    if (effTier !== 'low') { effTier = TIERS[TIERS.indexOf(effTier) - 1]; ui.toast(msg('qDropped', msg('qNames')[effTier])); applyQuality(); }
+    else if (adapt > .7) { adapt = Math.max(.7, adapt * .85); applyQuality(); ui.toast(msg('qRes')); }
     if (now - lastUp < 30000) backoff = Math.min(backoff * 2, 120);
     drawN = 0; ui.setFps(fps, true);
   } else if (p90 < expect * 1.12 + 2 && (effTier !== userTier || adapt < 1)) {
@@ -857,7 +881,7 @@ await nextFrame();
 async function loadsDone() {   // textures requested at construction time (Earth, Moon...) finish through DefaultLoadingManager
   await new Promise(r => { let done = false; const f = () => { if (!done) { done = true; r(); } }; if (texIdle) return f(); texWaiters.push(f); setTimeout(f, 6000); });
 }
-await loadsDone(); progress(.46, 'Dokular yüklendi');
+await loadsDone(); progress(.46, msg('lTex'));
 // Representative moments per world, including every first appearance of an effect (RCS bursts near 72/132/136/141, chutes, boats)
 // so no geometry upload or program link happens during the film.
 const WARM = { launch: [1, 6, 12, 18], orbit: [22, 30], transfer: [40], dock: [60, 72.1, 74], surface: [76, 88, 93, 96, 100, 104, 109, 114, 119, 122.2, 124, 132.4, 135.3], return: [136.2, 140, 141.2], entry: [158, 165], splash: [172, 177, 180, 181.3, 183] };
@@ -865,10 +889,10 @@ const worldKeys = Object.keys(worlds);
 const WARM_N = worldKeys.length;
 for (let wi = 0; wi < WARM_N; wi++) {
   const key = worldKeys[wi], f0 = .46 + wi / WARM_N * .5, f1 = .46 + (wi + 1) / WARM_N * .5;
-  progress(f0, 'Gölgelendiriciler derleniyor · ilk açılışta ~15 sn sürebilir'); await nextFrame();
+  progress(f0, msg('lCompile')); await nextFrame();
   mark(key + " compile>"); try { await compileWorld(key); } catch {}
   mark(key + " compiled"); let n = 0; const times = WARM[key] || [0];
-  for (const t of times) { update(t); post.render(t, 0); progress(mix(f0, f1, .5 + .5 * (++n) / times.length), 'Sahne hazırlanıyor · ' + (wi + 1) + '/' + WARM_N); await nextFrame(); }
+  for (const t of times) { update(t); post.render(t, 0); progress(mix(f0, f1, .5 + .5 * (++n) / times.length), msg('lScene', wi + 1, WARM_N)); await nextFrame(); }
 }
 mark("warm done"); update(state.time); post.render(state.time, 0);
 

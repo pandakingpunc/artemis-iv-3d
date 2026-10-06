@@ -14,15 +14,13 @@
 // Extras: ui.setCinema(on) / ui.isCinema() · ui.setQualityValue(q) · ui.isGateOpen()
 import * as THREE from 'three';
 import { $, TAU, clamp, mix, smooth } from './util.js';
+import { t, tx, num, int, getLang, onLang, toggleLang } from './i18n.js';
 
 const STAGE_COLORS = ['#ffb569', '#86bdff', '#62d6c6', '#a6e3a9', '#d4dde4', '#f1e7cf', '#d4dde4', '#62d6c6', '#ff7b4f', '#5eb3e8'];
-const CREW_LOC = ['Orion (SLS üzerinde)', 'Orion', 'Orion', 'Orion + HLS', 'HLS (2) · Orion (2)', 'Yüzey (2) · Orion (2)', 'HLS → Orion', 'Orion', 'Orion kapsülü', 'Kapsül → kurtarma gemisi'];
-const PLAY_ICON = '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg><span>Oynat</span>';
-const PAUSE_ICON = '<svg viewBox="0 0 24 24"><path d="M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z"/></svg><span>Duraklat</span>';
+const PLAY_ICON = () => '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg><span>' + t('play') + '</span>';
+const PAUSE_ICON = () => '<svg viewBox="0 0 24 24"><path d="M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z"/></svg><span>' + t('pause') + '</span>';
 const GLYPH_PLAY = 'M8 5v14l11-7z', GLYPH_PAUSE = 'M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z';
-const VIEW_NAMES = ['Standart', 'Uzak', 'Yakın'];
 const pad2 = n => String(n).padStart(2, '0');
-const group3 = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 const D = Math.PI / 180;
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 
@@ -116,10 +114,14 @@ export function createUI(api) {
   const chapBtns = stages.map((s, i) => {
     const b = document.createElement('button');
     b.style.setProperty('--w', (s.end - s.start) / duration * 100);
-    b.innerHTML = `<span class="n">${pad2(i + 1)}</span><span class="nm">${s.short || s.name}</span>`;
-    b.title = s.name + ' · sahne ' + (i + 1) + ' (' + ((i + 1) % 10) + ')'; b.setAttribute('aria-label', 'Sahne ' + (i + 1) + ': ' + s.name);
+    b.innerHTML = `<span class="n">${pad2(i + 1)}</span><span class="nm"></span>`;
     b.onclick = () => api.seek(s.start, true); $('#chapters').append(b); return b;
   });
+  const labelChapters = () => chapBtns.forEach((b, i) => {
+    const s = stages[i]; b.lastChild.textContent = s.short || s.name;
+    b.title = t('sceneTitle', s.name, i + 1, (i + 1) % 10); b.setAttribute('aria-label', t('sceneAria', i + 1, s.name));
+  });
+  labelChapters();
   // chapter names are dropped whenever their cell is too narrow to show them without truncation
   const fitChapters = () => { for (const b of chapBtns) { b.classList.remove('tiny'); const nm = b.lastChild; if (b.clientWidth && nm.scrollWidth + b.firstChild.offsetWidth + 14 > b.clientWidth) b.classList.add('tiny'); } };
   if (window.ResizeObserver) new ResizeObserver(fitChapters).observe($('#chapters')); else window.addEventListener('resize', fitChapters);
@@ -186,11 +188,11 @@ export function createUI(api) {
     const s = stages[idx], fresh = mode !== 'swap';
     setText($('#chapterIndex'), pad2(idx + 1) + ' / ' + stages.length); setText($('#stageTag'), s.tag);
     buildTitle(s.title); setText($('#chapterDesc'), s.desc); setText($('#crew'), s.crew);
-    setText($('#certainty'), idx === 0 ? 'GÖREV AKIŞI RAPORA DAYALI · TEMSİLİ' : 'T+ GÜNLERİ VE AYRINTILAR TEMSİLİ');
+    setText($('#certainty'), idx === 0 ? t('cert0') : t('certN'));
     if (mode !== 'first') {
       slideIn($('.chapter .eyebrow'), 0); slideIn($('#chapterDesc'), 320); slideIn($('.facts'), 440);
     }
-    swap($('#location'), s.loc, !fresh); swap($('#operation'), s.name, !fresh); swap($('#crewLoc'), CREW_LOC[idx] || s.crew, !fresh);
+    swap($('#location'), s.loc, !fresh); swap($('#operation'), s.name, !fresh); swap($('#crewLoc'), t('crewLoc')[idx] || s.crew, !fresh);
     briefChapter();
   }
   function onStage(idx, s) {
@@ -199,7 +201,7 @@ export function createUI(api) {
     document.documentElement.style.setProperty('--stage', color(idx));
     document.title = 'ARTEMIS IV · ' + s.name;
     updateSubtitle(idx, s, !first);
-    clearTimeout(annTimer); annTimer = setTimeout(() => setText($('#announcer'), 'Sahne ' + (idx + 1) + ' / ' + stages.length + ': ' + s.name + '. ' + s.desc), first ? 0 : 700);
+    clearTimeout(annTimer); annTimer = setTimeout(() => setText($('#announcer'), t('announce', idx + 1, stages.length, s.name, s.desc)), first ? 0 : 700);
     if (first || reduced() || loading) { renderStage(idx, 'first'); return; }
     // quick fade-out of the old chapter, then staggered reveal of the new one
     exitAnim?.cancel(); exitAnim = chapter.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], { duration: 150, easing: 'ease-in', fill: 'forwards' });
@@ -222,8 +224,8 @@ export function createUI(api) {
     if (!reduced() && glyph.animate) glyph.animate([{ opacity: 0, transform: 'scale(.78)' }, { opacity: 1, transform: 'scale(1)', offset: .22 }, { opacity: 0, transform: 'scale(1.3)' }], { duration: 700, easing: 'ease-out' });
   }
   function syncPlay() {
-    $('#play').innerHTML = state.playing ? PAUSE_ICON : PLAY_ICON;
-    $('#play').setAttribute('aria-label', state.playing ? 'Duraklat' : 'Oynat');
+    $('#play').innerHTML = state.playing ? PAUSE_ICON() : PLAY_ICON();
+    $('#play').setAttribute('aria-label', state.playing ? t('pause') : t('play'));
     if (state.playing !== prevPlaying) {
       prevPlaying = state.playing;
       if (!quiet && !gateOpen && !loading && state.time < duration - .05) flashGlyph(state.playing);
@@ -240,26 +242,27 @@ export function createUI(api) {
   const viewBtn = $('#view');
   function syncView(v = 0) {
     const free = state.mode === 'free';
-    viewBtn.disabled = free; viewBtn.title = free ? 'Serbest kamerada açı değiştirilemez · Sinematik moda geç' : 'Kamera açısını değiştir (Standart · Uzak · Yakın)';
-    viewBtn.firstElementChild.nextElementSibling.textContent = VIEW_NAMES[v]; viewBtn.setAttribute('aria-label', 'Kamera açısı: ' + VIEW_NAMES[v]); viewBtn.classList.toggle('alt', v > 0);
+    const name = t('views')[v];
+    viewBtn.disabled = free; viewBtn.title = free ? t('viewFreeTitle') : t('viewTitle');
+    viewBtn.firstElementChild.nextElementSibling.textContent = name; viewBtn.setAttribute('aria-label', t('viewAria', name)); viewBtn.classList.toggle('alt', v > 0);
     $('#cameraMode').value = state.mode;
   }
   $('#cameraMode').onchange = e => { api.setCameraMode(e.target.value); syncView(state.view || 0); };
-  viewBtn.onclick = () => { if (state.mode === 'free') { toast('Serbest kamerada açı değişmez · Kamera menüsünden Sinematik’i seç'); return; } syncView(api.cycleView()); };
+  viewBtn.onclick = () => { if (state.mode === 'free') { toast(t('viewFreeToast')); return; } syncView(api.cycleView()); };
   $('#quality').onchange = e => api.setQuality(e.target.value);
-  const toggleLabels = () => { state.labels = !state.labels; $('#labels').setAttribute('aria-pressed', state.labels); feedback(state.labels ? 'Etiketler açık' : 'Etiketler kapalı'); };
+  const toggleLabels = () => { state.labels = !state.labels; $('#labels').setAttribute('aria-pressed', state.labels); feedback(state.labels ? t('labelsOn') : t('labelsOff')); };
   $('#labels').onclick = toggleLabels;
   const soundBtn = $('#sound');
-  function syncSound() { setText(soundBtn.firstElementChild, state.sound ? 'Ses açık' : 'Ses kapalı'); soundBtn.setAttribute('aria-pressed', state.sound); }
-  const toggleSound = () => { api.audio.setEnabled(!api.audio.enabled); state.sound = api.audio.enabled; syncSound(); feedback(state.sound ? 'Ses açık' : 'Ses kapalı'); };
+  function syncSound() { setText(soundBtn.firstElementChild, state.sound ? t('soundOn') : t('soundOff')); soundBtn.setAttribute('aria-pressed', state.sound); }
+  const toggleSound = () => { api.audio.setEnabled(!api.audio.enabled); state.sound = api.audio.enabled; syncSound(); feedback(state.sound ? t('soundOn') : t('soundOff')); };
   soundBtn.onclick = toggleSound;
-  async function fullscreen() { try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch { toast('Bu tarayıcı tam ekranı desteklemiyor.'); } }
+  async function fullscreen() { try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch { toast(t('fsUnsupported')); } }
   $('#fullscreen').onclick = fullscreen;
   function hide() { if (isCinema) return; body.classList.toggle('hidden'); $('#show').hidden = !body.classList.contains('hidden'); poke(); }
   $('#hide').onclick = hide; $('#show').onclick = hide;
   $('#capture').onclick = () => {
     const a = document.createElement('a'); a.download = 'artemis-iv-' + String(Math.floor(state.time)) + 's.png'; a.href = api.capture(); a.click();
-    toast('3D sahne PNG olarak kaydedildi.');
+    toast(t('captured'));
   };
   // secondary controls live behind the ⋯ button on phones / very short windows
   const moreBtn = $('#more');
@@ -269,7 +272,7 @@ export function createUI(api) {
   // telemetry card: compact by default, details on hover or via the toggle (remembered)
   const tBtn = $('#tDetail');
   let teleOpen = store.get('a4.tele') === '1';
-  function setTele(on) { teleOpen = on; tele.classList.toggle('open', on); tBtn.setAttribute('aria-expanded', on); tBtn.firstElementChild.textContent = on ? 'Daha az' : 'Ayrıntı'; store.set('a4.tele', on ? '1' : '0'); }
+  function setTele(on) { teleOpen = on; tele.classList.toggle('open', on); tBtn.setAttribute('aria-expanded', on); tBtn.firstElementChild.textContent = on ? t('tLess') : t('tMore'); store.set('a4.tele', on ? '1' : '0'); }
   tBtn.onclick = () => setTele(!teleOpen); setTele(teleOpen);
 
   // ---- dialogs ----------------------------------------------------------------------------------------------------------
@@ -281,12 +284,19 @@ export function createUI(api) {
   window.addEventListener('keydown', () => { lastInputPointer = false; }, true);
   const openDialog = (d, from) => { opener = lastInputPointer ? null : (from || null); setMore(false); d.showModal(); };
   for (const d of [reportDialog, helpDialog]) d.addEventListener('close', () => { if (opener) opener.focus?.({ preventScroll: true }); else document.activeElement?.blur?.(); opener = null; });
-  let reportLoaded = false;
+  // the report file follows the language (report.md / rapor.md); a switch while it is open reloads it
+  let reportLoaded = null;
   async function loadReport() {
-    if (reportLoaded) return; reportLoaded = true;
-    try { const r = await fetch('rapor.md'); if (!r.ok) throw 0; renderMarkdown(await r.text(), $('#reportBody')); }
-    catch { reportLoaded = false; $('#reportBody').innerHTML = '<p>Rapor yüklenemedi. “Ham rapor metni” bağlantısını kullan.</p>'; }
+    const l = getLang(); if (reportLoaded === l) return; reportLoaded = l;
+    try { const r = await fetch(t('reportFile')); if (!r.ok) throw 0; const text = await r.text(); if (reportLoaded === l) renderMarkdown(text, $('#reportBody')); }
+    catch { if (reportLoaded !== l) return; reportLoaded = null; $('#reportBody').textContent = ''; const p = document.createElement('p'); p.textContent = t('rFail'); $('#reportBody').append(p); }
   }
+  const syncReportLang = () => {
+    $('#rawReport').href = t('reportFile');
+    if ($('#fullReport').open) loadReport();
+    else if (reportLoaded && reportLoaded !== getLang()) { reportLoaded = null; $('#reportBody').innerHTML = '<p class="mdLoading"></p>'; $('#reportBody').firstChild.textContent = t('rLoading'); }
+  };
+  syncReportLang();
   $('#fullReport').addEventListener('toggle', e => { if (e.target.open) loadReport(); });
   $('#report').onclick = e => openDialog(reportDialog, e.currentTarget);
   $('#help').onclick = e => openDialog(helpDialog, e.currentTarget);
@@ -306,7 +316,7 @@ export function createUI(api) {
     body.classList.toggle('cinema', on); body.classList.remove('show-exit'); $('#cinema').setAttribute('aria-pressed', on); setMore(false);
     if (on) {
       document.activeElement?.blur?.();
-      toast(isTouch ? 'Sinema modu · çıkmak için dokun' : 'Sinema modu · çıkmak için C veya Esc');
+      toast(isTouch ? t('cinemaToastTouch') : t('cinemaToast'));
       if (isTouch) showExit(3200);
     }
   }
@@ -320,14 +330,14 @@ export function createUI(api) {
   const loadingEl = $('#loading'), gateEl = $('#gate'), startBtn = $('#startBtn'), gateSound = $('#gateSound'), gateFs = $('#gateFs');
   let wantSound = store.get('a4.sound') !== '0', wantFs = false;
   const syncGate = () => {
-    gateSound.setAttribute('aria-pressed', wantSound); gateSound.lastElementChild.textContent = wantSound ? 'Ses açık' : 'Sessiz';
+    gateSound.setAttribute('aria-pressed', wantSound); gateSound.lastElementChild.textContent = wantSound ? t('soundOn') : t('muted');
     gateFs.setAttribute('aria-pressed', wantFs);
   };
   gateSound.onclick = () => { wantSound = !wantSound; store.set('a4.sound', wantSound ? '1' : '0'); syncGate(); };
   gateFs.onclick = () => { wantFs = !wantFs; syncGate(); }; syncGate();
   function dismissGate() {
     if (!loading) return; loading = false; gateOpen = false; body.classList.remove('gate');
-    loadingEl.classList.add('done'); $('#loadText').textContent = 'Görev hazır';
+    loadingEl.classList.add('done'); $('#loadText').textContent = t('missionReady');
     setTimeout(() => { loadingEl.style.display = 'none'; }, 1100);
     if (currentStage >= 0) setTimeout(() => renderStage(currentStage, 'intro'), 350); // replay the chapter reveal
     poke();
@@ -342,7 +352,7 @@ export function createUI(api) {
   startBtn.onclick = startMission;
   $('#gateSkip').onclick = () => { dismissGate(); };
   function openGate() {
-    gateOpen = true; body.classList.add('gate'); loadingEl.classList.add('ready'); gateEl.hidden = false; $('#loadText').textContent = 'Görev hazır';
+    gateOpen = true; body.classList.add('gate'); loadingEl.classList.add('ready'); gateEl.hidden = false; $('#loadText').textContent = t('missionReady');
     startBtn.focus({ preventScroll: true });
   }
   // End card: appears once the film has played through; Space / Yeniden izle restarts.
@@ -367,8 +377,8 @@ export function createUI(api) {
     if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) && e.target.id !== 'timeline') return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (e.code === 'Space') { if (e.target.tagName === 'BUTTON') return; e.preventDefault(); if (!e.repeat) api.togglePlay(); }
-    else if (k === 'ArrowRight') { e.preventDefault(); api.seek(state.time + 2, true); feedback('+2 sn'); }
-    else if (k === 'ArrowLeft') { e.preventDefault(); api.seek(state.time - 2, true); feedback('−2 sn'); }
+    else if (k === 'ArrowRight') { e.preventDefault(); api.seek(state.time + 2, true); feedback('+2 ' + t('uSec').toLowerCase()); }
+    else if (k === 'ArrowLeft') { e.preventDefault(); api.seek(state.time - 2, true); feedback('−2 ' + t('uSec').toLowerCase()); }
     else if (/^[0-9]$/.test(k) && !e.shiftKey) { const i = k === '0' ? 9 : Number(k) - 1; if (stages[i]) { e.preventDefault(); api.seek(stages[i].start, true); feedback((i + 1) + ' · ' + stages[i].name); } }
     else if (k === 'd' && e.shiftKey) body.classList.toggle('debug');
     else if (k === 'h') hide();
@@ -376,6 +386,7 @@ export function createUI(api) {
     else if (k === 'c') setCinema(!isCinema);
     else if (k === 'm') toggleSound();
     else if (k === 'l') toggleLabels();
+    else if (k === 't') { toggleLang(); feedback(t('langSwitched')); }
     else if (k === '?') { e.preventDefault(); openDialog(helpDialog, null); }
   });
 
@@ -417,8 +428,8 @@ export function createUI(api) {
     c.fillStyle = 'rgba(60,70,80,.28)'; for (const [dx, dy, rr] of [[-.3, -.2, .26], [.35, .1, .2], [-.05, .45, .16], [.2, -.5, .13]]) { c.beginPath(); c.arc(x + dx * R, y + dy * R, rr * R, 0, TAU); c.fill(); }
     // labels
     c.font = '500 11px Bahnschrift,"Segoe UI",sans-serif'; c.letterSpacing = '1.4px'; c.fillStyle = '#a9bccb'; c.textBaseline = 'middle';
-    c.textAlign = 'center'; c.fillText('DÜNYA', L.E[0], Math.min(mapH - 8, L.E[1] + L.Re + 15)); c.fillText('AY', L.M[0], L.M[1] + L.Rm + 14);
-    c.fillStyle = '#8fa6b8'; c.textAlign = 'center'; c.fillText('GİDİŞ', L.out[36][0], L.out[36][1] + 15); c.fillText('DÖNÜŞ', L.ret[36][0], L.ret[36][1] - 13);
+    c.textAlign = 'center'; c.fillText(t('mapEarth'), L.E[0], Math.min(mapH - 8, L.E[1] + L.Re + 15)); c.fillText(t('mapMoon'), L.M[0], L.M[1] + L.Rm + 14);
+    c.fillStyle = '#8fa6b8'; c.textAlign = 'center'; c.fillText(t('mapOut'), L.out[36][0], L.out[36][1] + 15); c.fillText(t('mapRet'), L.ret[36][0], L.ret[36][1] - 13);
   }
   const trace = (c, pts, upTo) => { // draw polyline up to fraction 0..1
     const n = pts.length - 1, f = clamp(upTo) * n, k = Math.floor(f); c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
@@ -470,37 +481,37 @@ export function createUI(api) {
   // ---- per-frame update -----------------------------------------------------------------------------------------------
   let lastPct = -1, lastSec = -1, lastDist = '', lastVel = '';
   const hairline = $('#hairline'), distLabel = $('#distLabel'), distApprox = $('#distApprox'), velApprox = $('#velApprox'), distUnit = $('#distUnit');
-  function frame({ t, idx, u, stage: s, day }) {
+  function frame({ t: ft, idx, u, stage: s, day }) {
     if (idx !== currentStage) onStage(idx, s);
     const now = performance.now();
     // playback chrome recedes after 3 s without input while the film plays
     const wantIdle = state.playing && !gateOpen && !isCinema && !overUI && !moreOpen && !reportDialog.open && !helpDialog.open && now - lastActive > 3000;
     if (wantIdle !== idle) setIdle(wantIdle);
     // end card
-    if (state.playing && t > duration - 2) endArmed = true;
-    if (endArmed && !state.playing && t >= duration - .02) showEnd(true);
-    else if (endShown && t < duration - .5) { showEnd(false); endArmed = false; }
+    if (state.playing && ft > duration - 2) endArmed = true;
+    if (endArmed && !state.playing && ft >= duration - .02) showEnd(true);
+    else if (endShown && ft < duration - .5) { showEnd(false); endArmed = false; }
     const secs = Math.floor(day * 86400);
     setText(el.mtD, pad2(Math.floor(secs / 86400))); setText(el.mtH, pad2(Math.floor(secs % 86400 / 3600))); setText(el.mtM, pad2(Math.floor(secs % 3600 / 60))); setText(el.mtS, pad2(secs % 60));
-    setText(el.timeNote, t === 0 ? 'Fırlatma anı · temsili görev saati' : idx === 0 ? 'Yükseliş zamanı temsili' : 'Temsili görev saati');
-    const sec = Math.floor(t);
+    setText(el.timeNote, ft === 0 ? t('tLaunch') : idx === 0 ? t('tAscent') : t('tClock'));
+    const sec = Math.floor(ft);
     if (sec !== lastSec) {
-      lastSec = sec; setText(el.filmTime, fmt(t) + ' / ' + totalLabel);
-      el.timeline.setAttribute('aria-valuetext', fmt(t) + ' / ' + totalLabel + ' · ' + s.name);
-      if (!scrubbing) el.timeline.value = t;
+      lastSec = sec; setText(el.filmTime, fmt(ft) + ' / ' + totalLabel);
+      el.timeline.setAttribute('aria-valuetext', fmt(ft) + ' / ' + totalLabel + ' · ' + s.name);
+      if (!scrubbing) el.timeline.value = ft;
     }
-    const pct = Math.round(t / duration * 4000) / 40;
+    const pct = Math.round(ft / duration * 4000) / 40;
     if (pct !== lastPct) { lastPct = pct; el.tl.style.setProperty('--p', pct + '%'); hairline.style.setProperty('--pr', (pct / 100).toFixed(4)); }
-    const [dist, vel] = profile(idx, u), alt = idx >= 8, ds = dist >= 1000 ? group3(Math.round(dist / 10) * 10) : dist >= 10 ? group3(Math.round(dist)) : dist >= .05 ? dist.toFixed(1).replace('.', ',') : '0', vs = (vel > 0 && vel < 1 ? vel.toFixed(2) : vel.toFixed(1)).replace('.', ',');   // slow phases (parachutes) keep a readable non-zero speed
+    const [dist, vel] = profile(idx, u), alt = idx >= 8, ds = dist >= 1000 ? int(Math.round(dist / 10) * 10) : dist >= 10 ? int(Math.round(dist)) : dist >= .05 ? num(dist, 1) : '0', vs = num(vel, vel > 0 && vel < 1 ? 2 : 1);   // slow phases (parachutes) keep a readable non-zero speed
     if (ds !== lastDist) { lastDist = ds; el.distance.textContent = ds; distApprox.hidden = ds === '0'; }
-    if (vs !== lastVel) { lastVel = vs; el.velocity.textContent = vs; velApprox.hidden = vs === '0,0' || vs === '0,00'; }
-    setText(distLabel, !alt ? 'Dünya’dan uzaklık' : ds === '0' ? 'Deniz seviyesi' : 'Yükseklik');
+    if (vs !== lastVel) { lastVel = vs; el.velocity.textContent = vs; velApprox.hidden = !Number(vs.replace(',', '.')); }
+    setText(distLabel, !alt ? t('distEarth') : ds === '0' ? t('seaLevel') : t('altitude'));
     // map: ≤30 Hz, only while the detail section is actually visible
     if (now - lastMap >= 33 && !isCinema && !idle && !body.classList.contains('hidden') && !gateOpen) {
       const shown = teleOpen || (hoverCapable && tele.matches(':hover'));
       if (shown) {
         if (!mapW && canvas.offsetWidth) layoutMap();
-        if (mapW) { lastMap = now; lastMapIdx = idx; drawMap(idx, u, t); }
+        if (mapW) { lastMap = now; lastMapIdx = idx; drawMap(idx, u, ft); }
       }
     }
   }
@@ -537,7 +548,7 @@ export function createUI(api) {
   }
   function addAnnotations(defs) {
     for (const d of defs) {
-      d.text = d.text.replace(/\s+\/\s+/g, ' · ');
+      d.src = d.text; d.text = tx(d.src).replace(/\s+\/\s+/g, ' · ');
       d.el = document.createElement('div'); d.el.className = 'annotation';
       d.el.innerHTML = '<i class="dot"></i><i class="lead"></i><span class="txt"></span>'; d.txt = d.el.lastChild; d.lead = d.el.children[1]; d.txt.textContent = d.text;
       d.on = false; d.px = d.py = -1e4; d.rect = { x0: 0, y0: 0, x1: 0, y1: 0 }; d.pl = -1; d.plKey = -1; d.hero = null; d.cx = d.cy = d.cr = 0;
@@ -630,11 +641,11 @@ export function createUI(api) {
   const fill = $('#loadFill'), pctEl = $('#loadPct'), stepEl = $('#loadStep'), bar = loadingEl.querySelector('.ld-bar');
   const ASSET_END = 70;
   let shown = 0, ready = false, explicit = false;
-  const steps = [[0, 'Başlatılıyor'], [15, 'Dünya ve Ay dokuları'], [45, 'Yüzey ve gökyüzü'], [ASSET_END, 'Gölgelendiriciler hazırlanıyor'], [100, 'Hazır']];
+  const steps = [[0, 'loadInit'], [15, 'loadTextures'], [45, 'loadSurface'], [ASSET_END, 'loadShaders'], [100, 'loadReady']];
   function setProgress(p, label) {
     p = Math.max(shown, Math.round(clamp(p, 0, 100))); if (p === shown && shown && !label) return; shown = p;
     fill.style.width = Math.max(6, p) + '%'; pctEl.textContent = p + '%'; bar.setAttribute('aria-valuenow', p);
-    let step = steps[0][1]; for (const [a, name] of steps) if (p >= a) step = name; stepEl.textContent = label || step;
+    let step = steps[0][1]; for (const [a, name] of steps) if (p >= a) step = name; stepEl.textContent = label || t(step);
   }
   function setLoadProgress(f, label) { if (!loading || ready) return; explicit = true; setProgress(ASSET_END + (100 - ASSET_END) * clamp(f), label || undefined); }
   const mgr = THREE.DefaultLoadingManager, prevProgress = mgr.onProgress;
@@ -646,15 +657,31 @@ export function createUI(api) {
   }, 450);
   const automated = () => !!navigator.webdriver || /[?&]nogate\b/.test(location.search);
   function hideLoading() {
-    if (ready) return; ready = true; setProgress(100, 'Hazır');
+    if (ready) return; ready = true; setProgress(100, t('loadReady'));
     const gate = /[?&]gate\b/.test(location.search) || !automated();
     setTimeout(() => { if (gate) openGate(); else dismissGate(); }, reduced() ? 0 : 450);
   }
 
+  // ---- language switch (static DOM is handled by i18n.applyDom; this refreshes everything rendered from JS) -------------
+  const syncSpeedLabels = () => { for (const o of $('#speed').options) o.textContent = String(Number(o.value)).replace('.', getLang() === 'tr' ? ',' : '.') + '×'; };
+  syncSpeedLabels();
+  document.querySelectorAll('.langBtn').forEach(b => b.addEventListener('click', toggleLang));
+  onLang(() => {
+    labelChapters(); fitChapters(); syncSpeedLabels();
+    syncPlay(); syncView(state.view || 0); syncSound(); syncGate(); setTele(teleOpen); syncReportLang();
+    if (gateOpen || !loading) $('#loadText').textContent = t('missionReady');
+    if (currentStage >= 0) {
+      const s = stages[currentStage]; renderStage(currentStage, 'first'); updateSubtitle(currentStage, s, false);
+      document.title = 'ARTEMIS IV · ' + s.name; lastSec = -1;
+    }
+    lastDist = lastVel = ''; lastMapIdx = -1; if (mapW) drawStatic();
+    for (const d of annotationDefs) { d.text = tx(d.src).replace(/\s+\/\s+/g, ' · '); d.txt.textContent = d.text; d.w = d.txt.offsetWidth; d.plKey = -1; }
+  });
+
   return {
     frame, syncPlay, toast, addAnnotations, updateAnnotations, hideLoading, setLoadProgress,
     setCinema, isCinema: () => isCinema, isGateOpen: () => gateOpen,
-    setFps(fps, adapted) { if (body.classList.contains('debug')) $('#fps').textContent = fps + ' FPS · ' + (adapted ? 'uyarlanan' : 'WebGL'); },
+    setFps(fps, adapted) { if (body.classList.contains('debug')) $('#fps').textContent = fps + ' FPS · ' + (adapted ? t('adapted') : 'WebGL'); },
     setQualityValue(q) { $('#quality').value = q; }
   };
 }
