@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#03070d"><title>ARTEMIS IV · T+0</title><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script></head>
+<body>
+<canvas id="scene" role="img" aria-label="Artemis IV üç boyutlu görev canlandırması"></canvas><div class="vignette"></div><div id="transition"></div>
+<div class="letterbox top" aria-hidden="true"><button id="exitCinema" tabindex="-1" aria-label="Sinema modundan çık"><span class="x-key">Çık <kbd>C</kbd></span><svg class="x-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+<div class="letterbox bottom" aria-hidden="true"><div class="subtitle"><small id="subKicker"></small><span id="subtitle"></span></div></div>
+<div id="loading">
+  <div class="ld-inner">
+    <svg class="ld-orbit" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="46" class="o1"/><circle cx="60" cy="60" r="30" class="o2"/><g class="ld-sat"><circle cx="106" cy="60" r="3.2"/></g><circle cx="60" cy="60" r="6" class="ld-core"/></svg>
+    <h2>ARTEMIS <em>IV</em></h2>
+    <p id="loadText" role="status" aria-live="polite">Görev sahnesi hazırlanıyor…</p>
+    <div class="ld-bar" role="progressbar" aria-label="Yükleme durumu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loadFill"></i></div>
+    <div class="ld-meta"><span id="loadStep">Başlatılıyor</span><b id="loadPct">0%</b></div>
+    <div class="ld-gate" id="gate" hidden>
+      <button id="startBtn" class="start" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span>Görevi başlat</span></button>
+      <div class="gate-opts">
+        <button id="gateSound" class="chip" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Ses açık</span></button>
+        <button id="gateFs" class="chip" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Tam ekran</span></button>
+      </div>
+      <p class="gate-note">3 dk 4 sn · film müziği tarayıcıda üretilir · kulaklık önerilir</p>
+      <button id="gateSkip" class="linkbtn" type="button">Atla · sahneyi keşfet</button>
+      <p class="gate-cav">Temsili görselleştirme · gerçek görüntü ve telemetri değildir</p>
+    </div>
+  </div>
+</div>
+<header class="hud top">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 33 20 6l14 27M12.5 24h15" /><circle cx="20" cy="6" r="1.8"/></svg>
+    <div><strong>ARTEMIS <em>IV</em></strong><small>AY’A DÖNÜŞ / GÖREV DENEYİMİ</small></div>
+  </div>
+  <div class="toptools">
+    <span class="status"><i></i> T+0 → DÜNYA’YA DÖNÜŞ</span>
+    <button id="report" title="Rapor ve kaynaklar" aria-label="Rapor ve kaynaklar">Rapor ↗</button>
+    <button id="help" class="ico" title="Kısayollar ve kontroller (?)" aria-label="Kısayollar ve kontroller"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 17h.01"/></svg></button>
+    <button id="cinema" title="Sinema modu (C)" aria-label="Sinema modu" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M3 9.5h18M3 14.5h18" opacity=".5"/></svg><span>Sinema</span><kbd>C</kbd></button>
+    <button id="hide" class="ico" title="Arayüzü gizle (H)" aria-label="Arayüzü gizle"><svg viewBox="0 0 24 24"><path d="M3 12s3.5-6.5 9-6.5S21 12 21 12s-3.5 6.5-9 6.5S3 12 3 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button>
+  </div>
+</header>
+<main class="hud">
+  <section class="chapter" aria-labelledby="chapterTitle">
+    <div class="eyebrow"><span id="chapterIndex">01 / 10</span><span id="stageTag">KENNEDY / DÜNYA</span></div>
+    <h1 id="chapterTitle">Yerçekimine<br>veda.</h1>
+    <p id="chapterDesc">Dört astronot. Bir yolculuk. SLS, Orion’u Dünya’dan Ay’a taşıyacak görevini başlatıyor.</p>
+    <div class="facts"><span id="crew">4 ASTRONOT · ORION</span><span id="certainty">GÖREV AKIŞI RAPORA DAYALI</span></div>
+    <button id="detailBtn" class="detailBtn" type="button" aria-expanded="false">Detay</button>
+  </section>
+  <aside class="telemetry" id="telemetry" aria-label="Görev telemetrisi, temsili değerler">
+    <div class="eyebrow"><span>GÖREV SAATİ</span><span class="fpsTag"><span class="liveDot" aria-hidden="true"></span><span id="fps" title="Görüntü hızı"></span></span></div>
+    <div id="missionTime" class="clock" aria-hidden="true"><span class="pre">T+</span><span class="seg"><b id="mtD">00</b><i>GÜN</i></span><span class="sep">:</span><span class="seg"><b id="mtH">00</b><i>SA</i></span><span class="sep">:</span><span class="seg"><b id="mtM">00</b><i>DK</i></span><span class="sep">:</span><span class="seg"><b id="mtS">00</b><i>SN</i></span></div>
+    <small id="timeNote">Fırlatma anı</small>
+    <div class="stats">
+      <div class="stat"><span class="k" id="distLabel">Dünya’dan uzaklık</span><b><i id="distApprox">≈</i><span id="distance">0</span><small id="distUnit">km</small></b></div>
+      <div class="stat"><span class="k">Hız</span><b><i id="velApprox">≈</i><span id="velocity">0,0</span><small>km/sn</small></b></div>
+    </div>
+    <p class="approx">Temsili / yaklaşık · gerçek telemetri değil</p>
+    <div class="detail"><div class="detailIn">
+      <dl class="rows">
+        <div class="row"><dt>Konum</dt><dd id="location"><span class="v">Kennedy Uzay Merkezi</span></dd></div>
+        <div class="row"><dt>Operasyon</dt><dd id="operation"><span class="v">Fırlatma</span></dd></div>
+        <div class="row"><dt>Mürettebat</dt><dd id="crewLoc"><span class="v">Orion</span></dd></div>
+      </dl>
+      <canvas id="map" width="500" height="240" role="img" aria-label="Şematik Dünya Ay görev haritası"></canvas>
+      <small class="mapNote">Şematik rota · ölçekler görsel anlatım için uyarlanmıştır</small>
+    </div></div>
+    <button id="tDetail" class="tDetail" type="button" aria-expanded="false" aria-controls="telemetry"><span>Ayrıntı</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></button>
+  </aside>
+  <div id="annotations" aria-hidden="true"></div>
+</main>
+<footer class="hud controls" id="dock">
+  <div class="timelineTop"><div class="tl-left"><span class="orange">●</span> GÖREV AKIŞI <span class="muted">/ 10 SAHNE</span></div><span class="disclaimer"><span class="dFull">3 Ekim 2026 raporu · T+ günleri temsili senaryo; kesin uçuş takvimi, iniş aracı ve yörünge henüz belirlenmiş değil.</span><span class="dShort">Temsili senaryo · 3 Ekim 2026 raporu</span></span><span id="filmTime">00:00 / 03:04</span></div>
+  <div class="tl" id="tl">
+    <div class="tl-track base" id="tlBase"></div>
+    <div class="tl-lit"><div class="tl-track" id="tlLit"></div></div>
+    <i class="tl-ghost"></i><i class="tl-thumb"></i>
+    <input id="timeline" type="range" min="0" max="184" step="0.01" value="0" aria-label="Görev zaman çizelgesi">
+    <div class="tl-tip" id="tlTip" aria-hidden="true"><span class="dot"></span><b id="tipName"></b><span id="tipTime"></span></div>
+  </div>
+  <nav id="chapters" aria-label="Görev aşamaları"></nav>
+  <div class="controlRow">
+    <div class="playGroup">
+      <button id="reset" class="ico" title="T+0’a dön" aria-label="Başa al"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4.5h4.5"/></svg></button>
+      <button id="play" class="primary" aria-label="Oynat"></button>
+      <label>Hız <select id="speed" aria-label="Oynatma hızı"><option value=".1">0,1×</option><option value=".25">0,25×</option><option value=".5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+      <button id="more" class="ico" title="Diğer kontroller" aria-label="Diğer kontroller" aria-expanded="false" aria-controls="viewGroup"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg></button>
+    </div>
+    <div class="viewGroup" id="viewGroup">
+      <label>Kamera <select id="cameraMode" aria-label="Kamera modu"><option value="cinematic">Sinematik</option><option value="free">Serbest</option></select></label>
+      <button id="view" title="Kamera açısını değiştir (Standart · Uzak · Yakın)" aria-label="Kamera açısı: Standart"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><span>Standart</span></button>
+      <label>Kalite <select id="quality" aria-label="Görüntü kalitesi"><option value="low">Düşük</option><option value="medium" selected>Orta</option><option value="high">Yüksek</option></select></label>
+      <button id="labels" aria-pressed="true" title="Sahne etiketleri (L)">Etiketler</button>
+      <button id="sound" aria-label="Ses" aria-pressed="false" title="Ses (M)"><span class="lbl">Ses kapalı</span><kbd>M</kbd></button>
+      <button id="capture" class="ico" title="Görüntüyü PNG olarak kaydet" aria-label="Görüntüyü PNG olarak kaydet"><svg viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.2-2h5.6L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+      <button id="fullscreen" class="ico" title="Tam ekran (F)" aria-label="Tam ekran"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </div>
+  </div>
+</footer>
+<button id="show" hidden>Arayüzü göster · H</button>
+<div id="caveat" aria-hidden="true">TEMSİLİ GÖRSELLEŞTİRME · gerçek görüntü değildir</div>
+<div id="hairline" aria-hidden="true"><i></i></div>
+<div id="glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><path id="glyphPath" d="M8 5v14l11-7z"/></svg></div>
+<section id="endcard" aria-labelledby="endTitle" hidden>
+  <div class="end-inner">
+    <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 33 20 6l14 27M12.5 24h15" /><circle cx="20" cy="6" r="1.8"/></svg>
+    <small class="end-kicker">GÖREV TAMAMLANDI · T+20 GÜN (TEMSİLİ)</small>
+    <h2 id="endTitle">ARTEMIS <em>IV</em></h2>
+    <p>Bir yolculuk. Yeni bir başlangıç.</p>
+    <div class="end-actions">
+      <button id="replay" class="start" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4.5h4.5" fill="none"/></svg><span>Yeniden izle</span></button>
+      <button id="endReport" class="chip" type="button">Rapor</button>
+      <button id="endCinema" class="chip" type="button">Sinema</button>
+    </div>
+    <p class="end-cav">Temsili görselleştirme · 3 Ekim 2026 raporuna dayalıdır; araçlar, rotalar ve T+ günleri temsilidir.</p>
+  </div>
+</section>
+<div id="toast" role="status"></div><div id="announcer" class="sr" aria-live="polite" aria-atomic="true"></div>
+
+<dialog id="reportDialog" aria-labelledby="reportTitle">
+  <div class="dialogHead"><span>GÖREV DOSYASI / ARTEMIS IV</span><button id="closeReport" class="ico" aria-label="Raporu kapat"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <h2 id="reportTitle">Rapordan sahneye.</h2>
+  <p class="lead">Bu deneyim, <b>3 Ekim 2026 Artemis IV araştırma raporunun</b> T+ görev sırasını görselleştirir. T+0, SLS/Orion fırlatma anıdır. Yaklaşık 21 günlük temsili görev, 3 dakika 4 saniyelik bir anlatıma sıkıştırılmıştır; zaman ölçeği sahneye göre değişir.</p>
+  <div class="note"><h3>Açıklanan görev</h3><p>4 astronot Orion ile yola çıkar, 2 kişi güney kutup bölgesine iner, ekip yörüngede birleşir ve Orion Pasifik’e döner.</p></div>
+  <div class="note"><h3>Görselleştirme tercihleri</h3><p>Araç geometrileri, uçuş rotaları, kademe ayrılma anları, iniş alanı, yüzey yürüyüşleri ve T+ günlerinin yerleşimi temsilidir. HLS genel bir iniş aracı olarak gösterilir; SpaceX veya Blue Origin seçimi yapılmaz. DUSTER ve SPSS geliştirilmek için seçilen aday bilim yükleridir; kesin uçuş manifestosu değildir. Gateway durağı eklenmemiştir.</p></div>
+  <div class="sourceLinks"><a href="rapor.md" target="_blank" rel="noopener">Ham rapor metni ↗</a><a href="https://www.nasa.gov/mission/artemis-iv/" target="_blank" rel="noopener">NASA · Artemis IV ↗</a><a href="https://www.nationalacademies.org/cdn/materials/a1f17baf-6a4e-4401-9458-6f21a236bcd2" target="_blank" rel="noopener">Ön görev taslağı ↗</a><a href="https://science.nasa.gov/missions/artemis/artemis-4/nasa-selects-2-instruments-for-artemis-iv-lunar-surface-science/" target="_blank" rel="noopener">Bilim yükleri ↗</a></div>
+  <details class="fullReport" id="fullReport"><summary>Tam araştırma raporunu burada oku</summary><div class="md" id="reportBody"><p class="mdLoading">Rapor yükleniyor…</p></div></details>
+  <p class="keyboard">Kontroller ve kısayollar için <kbd>?</kbd> tuşuna bas veya üstteki yardım düğmesini kullan.</p>
+</dialog>
+
+<dialog id="helpDialog" aria-labelledby="helpTitle">
+  <div class="dialogHead"><span>KONTROLLER</span><button id="closeHelp" class="ico" aria-label="Kontroller penceresini kapat"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <h2 id="helpTitle">Kısayollar</h2>
+  <div class="keys">
+    <div><kbd>Space</kbd><span>Oynat / duraklat</span></div>
+    <div><kbd>←</kbd><kbd>→</kbd><span>2 saniye geri / ileri</span></div>
+    <div><kbd>1</kbd>–<kbd>9</kbd> <kbd>0</kbd><span>Sahneye git (0 = 10. sahne)</span></div>
+    <div><kbd>C</kbd><span>Sinema modu (Esc ile çık)</span></div>
+    <div><kbd>H</kbd><span>Arayüzü gizle / göster</span></div>
+    <div><kbd>F</kbd><span>Tam ekran</span></div>
+    <div><kbd>M</kbd><span>Sesi aç / kapat</span></div>
+    <div><kbd>L</kbd><span>Sahne etiketleri</span></div>
+    <div><kbd>Shift</kbd><kbd>D</kbd><span>Performans göstergesi</span></div>
+    <div><kbd>?</kbd><span>Bu pencere</span></div>
+    <div><kbd>Esc</kbd><span>Pencereyi kapat / sinema modundan çık</span></div>
+  </div>
+  <p class="keyboard">Serbest kamera: sol sürükle döndür · tekerlek yaklaş · sağ sürükle kaydır<br>Dokunmatik: sürükle döndür · iki parmakla yakınlaştır ve kaydır. Zaman çizelgesine dokunarak sahneler arasında gezin.</p>
+</dialog>
+<script type="module" src="src/boot.js"></script></body></html>

@@ -1,0 +1,12 @@
+# Yerel test / doğrulama çıktıları
+verification.json
+full-play-verification.json
+*.log
+
+# Sistem / editör dosyaları
+node_modules/
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
